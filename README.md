@@ -1,2 +1,3 @@
 # youtube-summarizer
-enter a youtube url and get it's summary in your prefferred language
+Enter a You Tube URL and get it's summary in your preferred language.
+You can also liten to the summary
