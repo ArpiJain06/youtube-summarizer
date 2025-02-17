@@ -1,9 +1,12 @@
 # this is using huggingface's transformers library
 
 
-import requests
+import requests, os
+from dotenv import load_dotenv
 
-API_KEY = "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"
+load_dotenv()
+
+API_KEY = os.getenv('HUGGINGFACE_API_KEY')
 API_URL = "https://api-inference.huggingface.co/models/facebook/bart-large-cnn"
 headers = {"Authorization": f"Bearer {API_KEY}"}
 
@@ -13,7 +16,7 @@ def summarize_text(text, max_length=150, min_length=50):
     
     if len(text.split()) > 900:  
         text = " ".join(text.split()[:900])
-        
+
     payload = {
         "inputs": text,
         "parameters": {
@@ -31,7 +34,7 @@ def summarize_text(text, max_length=150, min_length=50):
 
 # import openai
 
-# openai.api_key = "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"
+# openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # try:
 #     openai.Model.list()
