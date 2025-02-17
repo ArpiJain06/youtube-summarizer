@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Transcript Translation</title>
+</head>
+<body>
+    <form method="POST">
+        <label for="video_url">Video URL:</label>
+        <input type="text" name="video_url" id="video_url" required><br><br>
+        
+        <label for="language">Select Language:</label>
+        <select name="language" id="language">
+            {% for code, language in languages.items() %}
+                <option value="{{ code }}" {% if code == selected_language %}selected{% endif %}>{{ language }}</option>
+            {% endfor %}
+        </select><br><br>
+        
+        <input type="submit" value="Get Transcript">
+    </form>
+    
+    {% if translated_text or summary %}
+        <h3>{{ "Translated Transcript" if translated_text else "Summary" }}</h3>
+        <p id="text">{{ translated_text or summary }}</p>
+        <button id="listenBtn">🔊 Listen</button>
+    {% elif error %}
+        <div style="color: red;">
+            <p>{{ error }}</p>
+        </div>
+    {% endif %}
+
+    <script>
+
+        var timestamp = new Date().getTime();
+        var newUrl = window.location.href.split('?')[0] + "?_=" + timestamp;
+        window.history.replaceState({}, document.title, newUrl);
+
+        console.log('Received Translated Text: {{ translated_text|tojson }}');
+        
+        document.addEventListener("DOMContentLoaded", function () {
+            var listenBtn = document.getElementById("listenBtn");
+
+            if (listenBtn) {
+            listenBtn.addEventListener("click", function () {
+                var textElement = document.getElementById("text");
+                if (!textElement) {
+                    console.error("❌ Text element not found.");
+                    return;
+                }
+
+                var text = textElement.innerText.trim();
+                if (!text) {
+                    console.error("❌ No text available to speak.");
+                    return;
+                }
+
+                console.log("🎙️ Speaking:", text);
+                speechSynthesis.cancel(); // Stop any currently playing speech
+
+                var selectedLang = "{% if selected_language %}{{ selected_language }}{% else %}en{% endif %}";
+                
+                function speakWithBrowserTTS() {
+                    let voices = speechSynthesis.getVoices();
+                    let voice = voices.find(v => v.lang.startsWith(selectedLang)) || voices.find(v => v.lang.startsWith("en"));
+
+                    if (voice) {
+                        let speech = new SpeechSynthesisUtterance(text);
+                        speech.voice = voice;
+                        speech.lang = voice.lang;
+                        speech.rate = 1;
+
+                        speech.onstart = function () {
+                            console.log("🔊 Speech started...");
+                        };
+                        speech.onend = function () {
+                            console.log("✅ Speech finished.");
+                        };
+                        speech.onerror = function (event) {
+                            console.error("❌ Speech synthesis error:", event);
+                        };
+
+                        setTimeout(() => {
+                            speechSynthesis.speak(speech);
+                        }, 200);
+                    } else {
+                        console.warn("⚠️ No browser voice found for", selectedLang, "- Using Google TTS");
+                        speakWithGoogleTTS();
+                    }
+                }
+
+                function speakWithGoogleTTS() {
+                    let googleTTSUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${selectedLang}&client=tw-ob&q=${encodeURIComponent(text)}`;
+                    let audio = new Audio(googleTTSUrl);
+                    
+                    audio.onplay = function () {
+                        console.log("🔊 Playing Google TTS audio...");
+                    };
+                    audio.onerror = function () {
+                        console.error("❌ Error loading Google TTS audio.");
+                    };
+
+                    audio.play();
+                }
+
+                // Ensure voices are loaded before trying to speak
+                    if (speechSynthesis.getVoices().length > 0) {
+                        speakWithBrowserTTS();
+                    } else {
+                        speechSynthesis.onvoiceschanged = function () {
+                            speakWithBrowserTTS();
+                        };
+                    }
+                });
+            } else {
+                console.error("❌ Listen button not found.");
+            }
+        });
+    </script>
+    
+</body>
+</html>
