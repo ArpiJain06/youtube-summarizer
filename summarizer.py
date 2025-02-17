@@ -16,7 +16,6 @@ def summarize_text(text, max_length=150, min_length=50):
     
     if len(text.split()) > 900:  
         text = " ".join(text.split()[:900])
-
     payload = {
         "inputs": text,
         "parameters": {
